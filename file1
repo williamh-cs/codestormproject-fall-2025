@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>My Web Page</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="site-header">
+            <h1>Welcome to My Web Page</h1>
+            <button id="themeToggle" aria-label="Toggle theme">Toggle theme</button>
+        </header>
+
+        <main>
+            <section class="chat-window" aria-label="Chat window">
+                <ul id="messages" class="messages" role="log" aria-live="polite"></ul>
+
+                <form id="chatForm" class="chat-form" autocomplete="off">
+                    <label for="messageInput" class="visually-hidden">Message</label>
+                    <input id="messageInput" name="message" type="text" placeholder="Type a message and press Enter or Send" aria-label="Message" />
+                    <button type="submit" id="sendBtn">Send</button>
+                </form>
+            </section>
+        </main>
+
+        <footer>
+            <small>&copy; <span id="year"></span> My Web Page</small>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
++
+</body>
+</html>
