@@ -1,0 +1,128 @@
+// Theme toggle with persistence and small DOM enhancements
+console.log("welcome to my website"); // log a small startup message to the console
+
+// setTheme: apply the theme to the document and persist it in localStorage
+function setTheme(theme) { // function declaration to change theme
+	document.documentElement.setAttribute('data-theme', theme); // set data-theme attr on <html>
+	localStorage.setItem('theme', theme); // save chosen theme so it persists between reloads
+}
+
+// toggleTheme: switch between 'light' and 'dark'
+function toggleTheme() { // toggles the current theme
+	const current = document.documentElement.getAttribute('data-theme') || 'light'; // read current theme or default to light
+	setTheme(current === 'light' ? 'dark' : 'light'); // set the opposite theme
+}
+
+// When DOM is ready, restore theme, wire theme button, set year, and initialize chat
+document.addEventListener('DOMContentLoaded', () => { // wait for DOM
+	const saved = localStorage.getItem('theme') || 'light'; // get saved theme or default to light
+	setTheme(saved); // apply saved theme
+
+	const btn = document.getElementById('themeToggle'); // find the theme toggle button
+	if (btn) btn.addEventListener('click', toggleTheme); // attach click handler if present
+
+	const yearEl = document.getElementById('year'); // find the year element in footer
+	if (yearEl) yearEl.textContent = new Date().getFullYear(); // write current year to footer
+
+	// Initialize chat UI and behavior after DOM is ready
+	initChat(); // call chat init to load messages and attach handlers
+});
+
+/* Chat logic: simple in-browser message store and mock bot reply */
+const CHAT_KEY = 'chatMessages'; // key used in localStorage for chat history
+let chatMessages = []; // array to hold message objects in memory
+
+// loadMessages: read saved messages from localStorage into memory
+function loadMessages() { // loads messages from storage
+	const raw = localStorage.getItem(CHAT_KEY); // raw JSON string from storage
+	try {
+		chatMessages = raw ? JSON.parse(raw) : []; // parse or use empty array
+	} catch (e) {
+		chatMessages = []; // if parsing fails, reset to empty
+	}
+}
+
+// saveMessages: persist the in-memory messages to localStorage
+function saveMessages() { // persist messages
+	localStorage.setItem(CHAT_KEY, JSON.stringify(chatMessages)); // stringify and save
+}
+
+// escapeHtml: prevent HTML injection by escaping text
+function escapeHtml(str) { // return safe text for insertion
+	const div = document.createElement('div'); // create temp div
+	div.textContent = str; // set textContent to escape special chars
+	return div.innerHTML; // read back escaped HTML
+}
+
+// renderMessages: update the <ul id="messages"> with current chatMessages
+function renderMessages() { // render messages to the DOM
+	const ul = document.getElementById('messages'); // find messages container
+	if (!ul) return; // if not present, do nothing
+	ul.innerHTML = ''; // clear previous contents
+	chatMessages.forEach(m => { // iterate through saved messages
+		const li = document.createElement('li'); // create list item for message
+		li.className = `message ${m.role}`; // add classes like 'message user' or 'message bot'
+
+		const meta = document.createElement('div'); // small meta element (author)
+		meta.className = 'meta'; // class for styling
+		meta.textContent = m.role === 'user' ? 'You' : 'Bot'; // friendly label
+
+		const bubble = document.createElement('div'); // bubble element for text
+		bubble.className = 'bubble'; // class for bubble styling
+		bubble.innerHTML = escapeHtml(m.text); // safely set the message text
+
+		li.appendChild(meta); // add meta above bubble
+		li.appendChild(bubble); // add bubble to list item
+		ul.appendChild(li); // append list item to the messages list
+	});
+	ul.scrollTop = ul.scrollHeight; // scroll to the bottom so newest messages are visible
+}
+
+// addMessage: push a new message object and re-render/save
+function addMessage(role, text) { // role is 'user' or 'bot', text is message content
+	chatMessages.push({ role, text, time: Date.now() }); // append message with timestamp
+	saveMessages(); // persist updated array
+	renderMessages(); // update UI
+}
+
+// mockBotReply: create a fake bot reply after a short delay
+function mockBotReply(userText) { // simulate an AI reply for demo purposes
+	addMessage('bot', 'Thinking...'); // show a temporary 'thinking' message
+	setTimeout(() => { // replace the placeholder with a reply after a delay
+		for (let i = chatMessages.length - 1; i >= 0; i--) { // search from end for bot placeholder
+			if (chatMessages[i].role === 'bot') { // find latest bot message
+				chatMessages[i].text = `Echo: ${userText}`; // set reply text (simple echo here)
+				break; // stop after replacing the most recent bot message
+			}
+		}
+		saveMessages(); // save updated message text
+		renderMessages(); // re-render messages to show the reply
+	}, 700 + Math.random() * 900); // wait between ~700ms and ~1600ms to simulate thinking
+}
+
+// sendMessage: high-level helper for sending a user message and triggering a bot reply
+function sendMessage(text) { // called when the user submits the form
+	if (!text || !text.trim()) return; // ignore empty or whitespace-only messages
+	addMessage('user', text.trim()); // add user message to list
+	mockBotReply(text.trim()); // ask the mock bot to reply
+}
+
+
+//initChat: wire up the form, load history, and prepare the UI
+function initChat() { // initialize chat on page load
+	renderMessages(); // render them into the DOM
+
+	const form = document.getElementById('chatForm'); // find chat form element
+	const input = document.getElementById('messageInput'); // find text input element
+	if (!form || !input) return; // if elements missing, don't proceed
+
+	form.addEventListener('submit', (e) => { // intercept form submit events
+		e.preventDefault(); // prevent page reload on submit
+		const v = input.value; // get the typed value
+		if (v && v.trim()) { // if non-empty
+			sendMessage(v); // send message
+			input.value = ''; // clear input
+		}
+		input.focus(); // keep focus in the input for fast typing
+	});
+}
